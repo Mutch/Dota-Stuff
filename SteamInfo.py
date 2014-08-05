@@ -1,5 +1,8 @@
-#YOUR STEAM KEY GOES HERE
-steamkey = "A3EE86FFD33DF8E396FC9DC17EA28123"
+
+#update your steam key in SteamKey.py
+import SteamKey
+steamkey = SteamKey.key
+
 
 import mutchIO as mIO
 
@@ -395,5 +398,9 @@ def get_HeroDict():
 	dictHero = {f["id"]:f["name"][14:] for f in fileDump["result"]["heroes"]}
 	
 	return dictHero
+	
+if __name__ == "__main__":
+	print("Steam Key Being Used Is: " + steamkey)
+	
 	
 pass 
