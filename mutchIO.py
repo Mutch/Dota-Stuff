@@ -1,6 +1,11 @@
 from time import time, sleep
-
 from pprint import pprint
+import shutil
+import os
+
+#backup directory for writes
+backupDir = "./Backup"
+writeCount = {}
 
 global curTime
 curTime = 0
@@ -68,27 +73,55 @@ def printer(thing = ""):
 		return
 
 	#write log
+
 	
 	try:
-		pprint(thing)
+		if type(thing) == str:
+			print(thing)
+			return
+		else:
+			pprint(thing)
 	except UnicodeEncodeError:
 		pprint(changeEncoding(thing, "cp437"))
 	
+def backupFile(origFileName):
 
+	if not (os.path.isdir(backupDir)):
+		os.mkdir(backupDir)
+	
+	if origFileName in writeCount.keys():
+		count = writeCount[origFileName]
+	else:
+		count = 1
+		writeCount[origFileName] = count
+		
+	backupFileName = backupDir + "/" + origFileName + " - " + str(count) + " - .backup"
+	
+	writeCount[origFileName] = writeCount[origFileName] + 1
+	
+	shutil.copy2(origFileName,backupFileName)
+	
+	
+	
+	pass
 	
 def writeFile(filename, data, type = "json",encoding = False):
 	if "." not in filename: filename=filename+"."+ type
+	
+	backupFile(filename)
+	
 	if encoding:data = changeEncoding(data,encoding)
 	try:
 		if type == "json":
 			import json as json
 			with open(filename, 'w') as outfile:
-				json.dump(data, outfile, sort_keys = True, indent = 4, ensure_ascii=False)
+				json.dump(data, outfile, sort_keys = True, indent = 4, ensure_ascii=True)
 		else:
 			f = open(filename, 'w')
 			f.write(data)
 			f.close()
 	except IOError: return (0, "IO error")
+	
 	return (1, "Success")
 
 def readFile(filename):
@@ -100,9 +133,12 @@ def readFile(filename):
 		f.close()
 	except IOError: return ""
 	if not fileDump: return (0, "File Empty")
+	
 	if type == "json":
 		import json as json
-		fileInfo = json.loads(fileDump)
+		try: fileInfo = json.loads(fileDump)
+		except ValueError: return ""
+
 	else: fileInfo = fileDump
 	return fileInfo	
 	
