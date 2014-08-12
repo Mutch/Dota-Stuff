@@ -12,9 +12,6 @@ dotaMatches.py
 
 dotaBuffParser.py 
   Should scrape dotabuff for a players match history.
-    Currently broken for some reason.
-    Gets most of the way through and errors at the end.
-    I suspect ive been an idiot.
   
 mutchIO.py
   Various ways of interacting with other things.

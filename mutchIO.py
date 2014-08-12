@@ -18,7 +18,7 @@ print()
 
 #write log
 
-def readWebAddress(url,waitTime = 1,tryAgain = True): 
+def readWebAddress(url,waitTime = 1,tryAgain = 2): 
 	"""This gets information from web address"""
 	import urllib.request, urllib.error, urllib.parse
 	connection = False
@@ -40,9 +40,11 @@ def readWebAddress(url,waitTime = 1,tryAgain = True):
 		if tryAgain:
 			print("Waiting 30 seconds and trying again")
 			sleep(30) 
-			contents = readWebAddress(url,waitTime,False)
+			print("...")
+			contents = readWebAddress(url,waitTime,tryAgain - 1)
 			if contents[0]:
 				print("Success on the second go")
+				print()
 	finally: 
 		if connection: connection.close()
 		return contents
@@ -100,17 +102,14 @@ def backupFile(origFileName):
 	writeCount[origFileName] = writeCount[origFileName] + 1
 	
 	shutil.copy2(origFileName,backupFileName)
-	
-	
-	
 	pass
 	
 def writeFile(filename, data, type = "json",encoding = False):
 	if "." not in filename: filename=filename+"."+ type
 	
 	backupFile(filename)
-	
 	if encoding:data = changeEncoding(data,encoding)
+	
 	try:
 		if type == "json":
 			import json as json
@@ -120,7 +119,20 @@ def writeFile(filename, data, type = "json",encoding = False):
 			f = open(filename, 'w')
 			f.write(data)
 			f.close()
-	except IOError: return (0, "IO error")
+	except: #restoring backup
+	
+		print()
+		print("Restoring Backed Up File")
+		print()
+		
+		count = writeCount[filename] - 1
+		backupFileName = backupDir + "/" + filename + " - " + str(count) + " - .backup"
+		shutil.copy2(backupFileName,filename)
+		
+		print("Backup Restored Successfully")
+		print()
+		
+		raise
 	
 	return (1, "Success")
 
@@ -141,7 +153,10 @@ def readFile(filename):
 
 	else: fileInfo = fileDump
 	return fileInfo	
-	
+
+def exitProgram():
+	import sys
+	sys.exit("Program Will Now Terminate")	
 
 #csv writing
 #http://java.dzone.com/articles/python-101-reading-and-writing

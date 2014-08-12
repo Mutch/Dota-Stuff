@@ -10,6 +10,7 @@ def findInfo(text, strStart, strEnd, startLoc = 0):
 	start = True
 	end = True	
 	indexStart = startLoc
+	
 	try: #find existing data
 		indexStart = text.index(strStart, startLoc)
 	except ValueError: start = False
@@ -21,11 +22,12 @@ def findInfo(text, strStart, strEnd, startLoc = 0):
 	return ("",0,0)
 
 def extractInfoFromPage(htmlDump):
-	(tableDump,dump1,dump2) = findInfo(htmlDump, "</thead><tbody><tr><td", "</td></tr></tbody></table>")
+
+	(tableDump,dump1,dump2) = findInfo(htmlDump, "/th></tr></thead><tbody><tr", "</td></tr></tbody></table>")
 	foundRow = True
 	listRows = []
 	rowStart = 0
-
+	
 	staTR = "<tr" #rows are <tr class="inactive"> for bot games etc
 	endTR = "</tr>"
 	staTD = "<td"
@@ -55,21 +57,18 @@ def extractInfoFromPage(htmlDump):
 
 	#   0    , 1
 	#Match ID,Hero,
-	print(listRows[0])
-	print(lots)
+
 	listMatchIDs = [f[1] for f in listRows]
-	print(listMatchIDs)
-	print(lots)
+
 	staMid = 'href="/matches/'
 	endMid = '">'
 	listMatchIDs = [findInfo(f, staMid, endMid) for f in listMatchIDs]
-	print(listMatchIDs)
-	print(lots)
+
 	#seperates it out into the actual ID
 	listMatchIDs = [int(f[0][len(staMid):-len(endMid)]) for f in listMatchIDs]
 	
 	
-
+	print("Match IDs")
 	print(listMatchIDs)
 	print(lots)
 	return listMatchIDs
@@ -80,6 +79,8 @@ def createMatchList(dotaId,pageNum = 1):
 	
 	listMatchIDs = []
 	
+	doubleNothing = False
+	
 	while True:
 		url2Parse = url + str(pageNum)
 		
@@ -87,15 +88,17 @@ def createMatchList(dotaId,pageNum = 1):
 		
 		if not webDump[0]:
 			return webDump
-			
+
 		endPageText = "Sorry, there's no data for this period."
 		if endPageText in webDump:
 			break
-		
+
 		listNewIDs = extractInfoFromPage(webDump)
-		
+
 		if listNewIDs:
 			listMatchIDs.extend(listNewIDs)
+		elif doubleNothing: break
+		else: doubleNothing = True
 		
 		pageNum = pageNum + 1
 		if pageNum == 100000: break
@@ -103,19 +106,33 @@ def createMatchList(dotaId,pageNum = 1):
 	return listMatchIDs
 	
 def makeMatchHistoryEntry(dictMatchDetailEntry):
-
-	print(lots)
-	print(dictMatchDetailEntry)
-	print(lots)
+	
+	try:
+		print("Making Match History Entry for Match: " + str(dictMatchDetailEntry["match_id"]))
+		print()
+	except KeyError:
+		print(dictMatchDetailEntry)
+		return
+		
+	
 	newEntry = {}
 	tupKeys2Keep = ("lobby_type","match_id","match_seq_num","players","start_time")
 	tupPlayerKeys2Keep = ("account_id","hero_id","player_slot")
+	
 	newEntry = {f:dictMatchDetailEntry[f] for f in tupKeys2Keep}
 
 	newPlayers = []
 	
 	for f in newEntry["players"]:
-		f = {g:f[g] for g in tupPlayerKeys2Keep}
+	
+		try:f = {g:f[g] for g in tupPlayerKeys2Keep}
+		except KeyError:
+			tempDict = {}
+			for g in tupPlayerKeys2Keep:
+				if g in f:
+					tempDict.update({g:f[g]})
+			f = tempDict.copy()
+					
 		newPlayers.append(f)
 			
 	newEntry["players"] = newPlayers
@@ -128,30 +145,41 @@ if __name__ == "__main__":
 	#test stuff
 	import SteamInfo as StIn
 
-	IDtemp = (StIn.resolve_VanityUrl("Mutch"))
-	IDtemp = StIn.acc64bit_to_acc32bit(IDtemp)
+	IDtemp = StIn.acc64bit_to_acc32bit(76561198003122280)
 	
-	tempList = createMatchList(IDtemp,36)
+	tempList = createMatchList(IDtemp,62)
 
 	print(lots)
 	print(len(tempList))
+	print(lots)
+	print(tempList)	
 	
-
+	
 	print(lots)
-	print(lots)
-	matchdetail = StIn.get_matchDetail(19394358)
+	
+	
+	
+	"""
+	matchdetail = StIn.get_matchDetail(709503626)
 	matchHistory = makeMatchHistoryEntry(matchdetail)
 
 	print(matchHistory)
 	
-	tempList = StIn.get_matchDetail(tempList)
-	listmatchHistories = [makeMatchHistoryEntry(f) for f in tempList]
-	print(listmatchHistories[0])
+	tempList = [StIn.get_matchDetail(f) for f in tempList]
 	
-	IDtemp = 76561197960696226
-	tempList = createMatchList(IDtemp,65)
+	print(lots)
+	print(tempList)		
+	print(lots)
+	
 	listmatchHistories = [makeMatchHistoryEntry(f) for f in tempList]
 	print(listmatchHistories[0])
+
+	IDtemp = 76561197960696226
+	tempList = createMatchList(IDtemp,74)
+	tempList = [StIn.get_matchDetail(f) for f in tempList]
+	listmatchHistories = [makeMatchHistoryEntry(f) for f in tempList]
+	print(listmatchHistories[0])
+	"""
 	
 	
 	

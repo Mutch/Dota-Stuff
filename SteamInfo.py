@@ -1,39 +1,12 @@
+#YOUR STEAM KEY GOESIN ANOTHER FILE
 
-#update your steam key in SteamKey.py
 import SteamKey
 steamkey = SteamKey.key
 
 
 import mutchIO as mIO
-
-"""
-from time import time, sleep
-
-global curTime
-curTime = 0
-
-#utilities
-def readWebAddress(url): 
-	#This gets information from web address
-	import urllib.request, urllib.error, urllib.parse
-	connection = False
-	
-	global curTime
-	
-	if curTime + 1 > time():
-		sleep(1)   
-	curTime = time()
-	print(curTime)
-
-	try:
-		connection = urllib.request.urlopen(url)
-		contents = connection.read().decode("utf-8")
-		return contents	
-	except urllib.error.URLError as err:
-		print(("-\n--\n-\nDidn't connect to server\n%s\n-\n--\n-" % err.reason))
-	finally: 
-		if connection: connection.close()	
-"""
+from mutchIO import printer as print
+from mutchIO import lots
 
 #steam ID conversions
 def acc32bit_to_acc64bit(accNum32Bitdec):
@@ -370,7 +343,7 @@ def get_matchHistory(player_name="",hero_id="",skill="",date_min="",date_max="",
 	"""
 	return fileDump["result"]["matches"]#returns a list of dictionaries.
 
-def get_matchDetail(matchID):# takes match id and returns match dictionary
+def get_matchDetail(matchID,waitTime = 1):# takes match id and returns match dictionary
 	if type(matchID) is str:pass
 	elif type(matchID) is int: matchID = str(matchID)
 	else: return (0,"the Match ID is the wrong type")
@@ -378,10 +351,17 @@ def get_matchDetail(matchID):# takes match id and returns match dictionary
 	
 	url = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/?key=%s&match_ID=%s" % (steamkey,matchID)
 	
-	f = mIO.readWebAddress(url)
+	f = mIO.readWebAddress(url,waitTime)
+
+	try:
+		import json as json
+		fileDump = json.loads(f)
+	except TypeError:
 	
-	import json as json
-	fileDump = json.loads(f)
+		print(lots)
+		print("Match ID: " + str(matchID))
+		print("Error: " + f[1])
+		return
 
 	return fileDump["result"]#returns a list of dictionaries.
 

@@ -3,39 +3,14 @@ from mutchIO import printer as print
 from mutchIO import lots
 
 import SteamInfo as StIn
-#file IO
-"""
-def readFile(filename):
-	if "." not in filename: filename=filename+".dat"
-	try:
-		f = open(filename)
-		fileDump = f.read()
-		f.close()
-	except IOError: return ""
-	if not fileDump: return (0, "File Empty")
-	import json as json
-	fileInfo = json.loads(fileDump)
-	return fileInfo
-"""
-"""
-def writeFile(filename, data, type = "json"):
-	if "." not in filename: filename=filename+"."+ type
-	try:
-		if type == "json":
-			import json as json
-			with open(filename, 'w') as outfile:
-				json.dump(data, outfile, sort_keys = True, indent = 4, ensure_ascii=False)
-		else:
-			f = open(filename, 'w')
-			f.write(data)
-			f.close()
-	except IOError: return (0, "IO error")
-	return (1, "Success")
-"""	
+
 def read_MatchHistoryLocal(ID=""):#takes id and returns a list of matches with date
 	fileInfo = mIO.readFile("Dota2PlayerMatchHistories.json")
 	if not fileInfo: return (0, "No file")
-
+	if type(ID) is not str:
+		if type(ID) is int: ID = str(ID)
+		else: return (0, "Expected String, Could have handled an int but got neither")
+		
 	if ID:
 		if ID in fileInfo.keys():
 			return fileInfo[ID]
@@ -51,6 +26,7 @@ def write_MatchHistoryLocal(dictMatchHistorytoWrite):
 	existing_MatchHistories = read_MatchHistoryLocal()
 	if type(existing_MatchHistories) is not dict: existing_MatchHistories = {}
 	existing_MatchHistories.update(dictMatchHistorytoWrite)
+	
 	return mIO.writeFile("Dota2PlayerMatchHistories.json",existing_MatchHistories)
 	
 def read_MatchesLocal(IDs=("just get the keys out will you please",)):#takes id list and returns a dict of matches and info
@@ -122,20 +98,33 @@ def get_LatestMatchHistory(ID): #returns a list of match summary dictionaries
 		listNewHistories.extend(listDotaBuffHistories)
 
 		
-	write_MatchHistoryLocal({ID:listNewHistories})
+	write_MatchHistoryLocal({str(ID):listNewHistories})
 	
 	return listNewHistories
 
 def get_LatestMatches(listMatchIDs):#returns a dict of match info
 
 	if type(listMatchIDs) is not tuple and type(listMatchIDs) is not list:
+		print(lots)
+		print(0, "Was expecting a list but got%s" % type(listMatchIDs))
+		print(lots)
 		return (0, "Was expecting a list but got%s" % type(listMatchIDs))
+	else: listMatchIDs = list(set(listMatchIDs))
+		
 	listMatchesHave = read_MatchesLocal() #get local keys
-
+	
 	listMatchesFromSteam = [f for f in listMatchIDs if f not in listMatchesHave]
 	listMatchesFromLocal = [f for f in listMatchIDs if f not in listMatchesFromSteam]
 
-	dictMatchesFromSteam = {f:StIn.get_matchDetail(f) for f in listMatchesFromSteam}
+	numberAPIcalls = len(listMatchesFromSteam)
+	APIwaitTime = 1 + (numberAPIcalls/20)
+	print(lots)
+	print("There are {0} calls to the Steam API".format(numberAPIcalls))
+	print("This will take AT LEAST {0} minutes".format((APIwaitTime * numberAPIcalls)/60))
+	print(lots)
+	
+	dictMatchesFromSteam = {f:StIn.get_matchDetail(f,APIwaitTime) for f in listMatchesFromSteam}
+	dictMatchesFromSteam = {k:v for k,v in dictMatchesFromSteam.items() if type(v) is not tuple}
 	dictMatchesFromLocal = read_MatchesLocal(listMatchesFromLocal)
 
 	if type(dictMatchesFromLocal) is tuple: dictMatchesFromLocal = {}
@@ -173,24 +162,35 @@ def get_DotaBuffHistories(ID, earliestMatchID = 0, noMatchesToIgnore = 500):
 	
 	listDotaBuffMatchHistories = [dBP.makeMatchHistoryEntry(dictMatchInfo[f]) for f in listDotaBuffMatchIDs]
 	
+	listDotaBuffMatchHistories = [f for f in listDotaBuffMatchHistories if f]
+	
 	return listDotaBuffMatchHistories
 
 print("Dota Matches")
+print("")
 
 
 if __name__ == "__main__":
 	
-	"""
-	IDtemp = (StIn.resolve_VanityUrl("Mutch"))
 
-	get_LatestMatchHistory(IDtemp)
-	"""
-	dictIDtemp = {76561197962462111:"Mutch",76561197960696226:"Taffy",76561197999491798:"Kilthix",76561197961524497:"YubYub"}#,76561198003122280:"Inverter"} 
-	
+	#IDtemp = (StIn.resolve_VanityUrl("Mutch"))
+
+	#get_LatestMatchHistory(IDtemp)
+
+	dictIDtemp = {76561197962462111:"Mutch",76561197960696226:"Taffy",76561197999491798:"Kilthix",76561197961524497:"YubYub",76561198003122280:"Inverter"} 
+
 	listMatchHistories = [get_LatestMatchHistory(f) for f in dictIDtemp.keys()]
 	
-	for f in listMatchHistories:
-		get_LatestMatches(f)
+	listMatches = [item for sublist in listMatchHistories for item in sublist]
+	
+	
+	listMatches = [f["match_id"] for f in listMatches]
+	
+	get_LatestMatches(listMatches)
+	
+	print(lots)
+	print("All Finished")
+	print(lots)
 	
 	
 		
