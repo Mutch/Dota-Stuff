@@ -166,6 +166,16 @@ def get_DotaBuffHistories(ID, earliestMatchID = 0, noMatchesToIgnore = 500):
 	
 	return listDotaBuffMatchHistories
 
+#converts UTC to new time zone (brisbane is default)
+def convertTime(strTime, timeZone=10): #returns a a formatted string
+	import datetime
+	timeChange = datetime.timedelta(hours=timeZone)
+
+	theDateTime = datetime.datetime.utcfromtimestamp(strTime)
+	theDateTime = theDateTime + timeChange
+	return theDateTime.strftime("%d/%m/%y %H:%M")
+	
+	
 print("Dota Matches")
 print("")
 

@@ -1,4 +1,4 @@
-#YOUR STEAM KEY GOESIN ANOTHER FILE
+#YOUR STEAM KEY GOES IN ANOTHER FILE
 
 import SteamKey
 steamkey = SteamKey.key

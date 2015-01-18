@@ -87,8 +87,10 @@ def printer(thing = ""):
 		pprint(changeEncoding(thing, "cp437"))
 	
 def backupFile(origFileName):
-
-	if not (os.path.isdir(backupDir)):
+	
+	if not (os.path.isfile(origFileName)): return None
+	
+	if not (os.path.isdir(backupDir)): #make backup dir
 		os.mkdir(backupDir)
 	
 	if origFileName in writeCount.keys():
