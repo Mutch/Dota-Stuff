@@ -61,6 +61,22 @@ def write_MatchesLocal(dictMatchestoWrite):
 	existing_Matches.update(dictMatchestoWrite)
 	
 	return mIO.writeFile("Dota2MatchInformation.json",existing_Matches)
+
+def delete_MatchHistoryLocal(ID):
+	if type(ID) is not str:
+		if type(ID) is int: ID = str(ID)
+		else: return (0, "Expected String, Could have handled an int but got neither")	
+	
+	existing_MatchHistories = read_MatchHistoryLocal()
+	
+	if ID not in existing_MatchHistories.keys():
+		return (1, "Did not Exist Locally")
+	
+	del existing_MatchHistories[ID]
+
+	return mIO.writeFile("Dota2PlayerMatchHistories.json",existing_MatchHistories)
+
+
 	
 #steam Info
 def get_LatestMatchHistory(ID): #returns a list of match summary dictionaries
