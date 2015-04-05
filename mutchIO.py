@@ -5,7 +5,6 @@ import os
 
 #backup directory for writes
 backupDir = "./Backup"
-writeCount = {}
 
 global curTime
 curTime = 0
@@ -17,6 +16,64 @@ print("mutchIO Loaded")
 print()
 
 #write log
+
+def readWebAddressLocalCache(url,cacheTimeDateTime,waitTime = 1,tryAgain = 2):
+	import datetime as dt
+	#cache directory for lookups
+	cacheDir = "./URL Cache"
+	dateTimeStrFormat = "%d-%m-%Y-%H-%M"
+	urlFileName = "".join(c for c in url if c.isalnum() or c == ".")
+	
+	if not (os.path.isdir(cacheDir)):
+		os.mkdir(cacheDir)
+	
+	if type(cacheTimeDateTime) is dt.datetime:
+		pass
+	elif type(cacheTimeDateTime) is dt.date:
+		time = dt.time(hour=23, minute=59)
+		cacheTimeDateTime = dt.combine(cacheTimeDateTime, time)
+	elif type(cacheTimeDateTime) is dt.timedelta:
+		cacheTimeDateTime = dt.datetime.today() - cacheTimeDateTime
+	elif type(cacheTimeDateTime) is int or type(cacheTimeDateTime) is float:
+		cacheTimeDateTime = dt.datetime.today() - dt.timedelta(days=cacheTimeDateTime)
+
+	urlInfo = False
+	fileName = ""
+	#read cache
+	if type(cacheTimeDateTime) is dt.datetime:
+		cacheList = os.listdir(cacheDir)
+		cacheList = [f for f in cacheList if f.startswith(urlFileName)]
+		
+		if cacheList:
+			fileName =  cacheList[0]
+			fileNameList = fileName.split(".")
+			fileNameDateString = fileNameList[-2]
+			#try
+			fileDateTime = dt.datetime.strptime(fileNameDateString, dateTimeStrFormat)
+
+			if cacheTimeDateTime < fileDateTime:
+				urlInfo = readFile(os.path.join(cacheDir,fileName))
+				print()
+				print("Local Cache of", url,"accessed at",dt.datetime.today())
+				print("Cache was grabbed at",fileDateTime)
+				print()
+				
+	#write cache	
+	if not urlInfo: 
+		urlInfo = readWebAddress(url,waitTime,tryAgain)
+		
+		accessTime = dt.datetime.today()
+		accessTimeString = accessTime.strftime(dateTimeStrFormat)
+		
+		cacheFileName = urlFileName + "." + accessTimeString
+		
+		if os.path.isfile(os.path.join(cacheDir,fileName)):
+			os.remove(os.path.join(cacheDir,fileName))
+			
+		writeFile(os.path.join(cacheDir,cacheFileName), urlInfo, type = "txt")
+		print(url, "Saved to local cache")
+
+	return(urlInfo)
 
 def readWebAddress(url,waitTime = 1,tryAgain = 2): 
 	"""This gets information from web address"""
@@ -48,8 +105,6 @@ def readWebAddress(url,waitTime = 1,tryAgain = 2):
 	finally: 
 		if connection: connection.close()
 		return contents
-
-		
 	
 def changeEncoding(thing, encoding = "ascii", errorType = 'backslashreplace'):
 	if type(thing) is str:
@@ -86,30 +141,32 @@ def printer(thing = ""):
 	except UnicodeEncodeError:
 		pprint(changeEncoding(thing, "cp437"))
 	
-def backupFile(origFileName):
-	
-	if not (os.path.isfile(origFileName)): return None
-	
+def backupFile(origFileName,backupFileName):
+
 	if not (os.path.isdir(backupDir)): #make backup dir
 		os.mkdir(backupDir)
+	else:#is there an existing backup?
+		if (os.path.isfile(backupFileName)):
+			oldBackupFileName = backupDir + "/" + origFileName + ".oldbackup"
+			shutil.copy2(backupFileName,oldBackupFileName)
 	
-	if origFileName in writeCount.keys():
-		count = writeCount[origFileName]
+	if not (os.path.isfile(origFileName)): return None
 	else:
-		count = 1
-		writeCount[origFileName] = count
-		
-	backupFileName = backupDir + "/" + origFileName + " - " + str(count) + " - .backup"
-	
-	writeCount[origFileName] = writeCount[origFileName] + 1
-	
-	shutil.copy2(origFileName,backupFileName)
+		shutil.copy2(origFileName,backupFileName)
+
 	pass
 	
-def writeFile(filename, data, type = "json",encoding = False):
-	if "." not in filename: filename=filename+"."+ type
+def writeFile(filename, data, type, encoding = False):
+	if not filename.endswith(type): 
+		filename=filename+"."+ type
+	else:
+		tempIndex = filename.rindex(".")
+		type = filename[tempIndex+1:]
 	
-	backupFile(filename)
+	filenameOnly = os.path.split(filename)[1]
+	backupFileName = os.path.join(backupDir,filenameOnly + ".backup")
+	backupFile(filenameOnly,backupFileName)
+	
 	if encoding:data = changeEncoding(data,encoding)
 	
 	try:
@@ -122,16 +179,17 @@ def writeFile(filename, data, type = "json",encoding = False):
 			f.write(data)
 			f.close()
 	except: #restoring backup
-	
-		print()
-		print("Restoring Backed Up File")
-		print()
 		
-		count = writeCount[filename] - 1
-		backupFileName = backupDir + "/" + filename + " - " + str(count) + " - .backup"
-		shutil.copy2(backupFileName,filename)
-		
-		print("Backup Restored Successfully")
+		print()
+		print("Trying to Restore Backed Up File")
+		print()
+		try:
+			shutil.copy2(backupFileName,filename)
+			print("Backup Restored Successfully")
+		except FileNotFoundError: 
+			os.remove(filename)
+			print("Backup Does Not Exist - This was First File Creation")
+
 		print()
 		
 		raise
@@ -156,9 +214,9 @@ def readFile(filename):
 	else: fileInfo = fileDump
 	return fileInfo	
 
-def exitProgram():
+def exitProgram(closeNote = "Program Will Now Terminate"):
 	import sys
-	sys.exit("Program Will Now Terminate")	
+	sys.exit(closeNote)	
 
 #csv writing
 #http://java.dzone.com/articles/python-101-reading-and-writing
@@ -186,5 +244,11 @@ webDump = webDump.decode(encoding="cp437", errors="replace")
 #print(writeFile("test",webDump))
 print(writeFile("test",webDump,"txt"))
 """
+
+if __name__ == "__main__":
+	printer(lots)
+	printer("Nothing To See Here")
+	printer(lots)
+
 
 pass 
